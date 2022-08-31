@@ -32,7 +32,9 @@ library(rio);# simple command for importing and exporting
 library(pander); # format tables
 library(printr); # set limit on number of lines printed
 library(broom); # allows to give clean dataset
-library(dplyr); #add dplyr library
+library(dplyr); # add dplyr library
+library(fs)
+library(R.utils) # error message for "for loop"
 
 options(max.print=42);
 panderOptions('table.split.table',Inf); panderOptions('table.split.cells',Inf);
@@ -44,11 +46,56 @@ whatisthis <- function(xx){
 InputData <- 'https://physionet.org/static/published-projects/mimic-iv-demo/mimic-iv-clinical-database-demo-1.0.zip'
 dir.create("data", showWarnings = FALSE)
 ZippedData <- file.path("data", "temptdata.zip")
-FileName <- download.file(InputData,
-                          destfile = ZippedData)
+
+if(!file.exists(ZippedData)){download.file(InputData,
+                                           destfile = ZippedData)}
+
+
+#' ## in case we don't need to download data multiple times
+#'
+
+#' # Unzip the data
+UnzippedData <- unzip(ZippedData, exdir = "data") %>%
+  grep("gz", ., value = TRUE)
+Transfers <- import(UnzippedData[3])
+TableNames <- basename(UnzippedData) %>%
+  fs::path_ext_remove() %>%
+  path_ext_remove()
+
+assign(TableNames[3], import(UnzippedData[3], fread = FALSE))
+
+#' ## Use a For Loop to repeat particular set of steps to get the tables
+# for(ii in seq_along(TableNames)){
+  #assign(TableNames[ii], # assign file names as table names for the to-be-extracted tables
+         #import(UnzippedData[ii], format = 'csv'),
+         #inherits = TRUE)
+#}
+
+#' ## Use mapply
+Junk <- mapply(
+  function(xx, yy){
+  #browser()
+  assign(xx,
+         import(yy, format = 'csv'),
+         inherits = TRUE)
+    },
+  TableNames,
+  UnzippedData)
+
+#' # saving the data
+save(list = TableNames, file = "data.R.rdata")
 
 
 
+#'
+#'
+
+
+
+#' ##
+# %>%
+# grep("gz", UnzippedData)  # positions in the vector where the pattern "gz" has been found
+# grep("gz", UnzippedData, value = TRUE) # return the actual strings
 
 
 
