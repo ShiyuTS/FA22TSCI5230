@@ -33,6 +33,7 @@ library(printr); # set limit on number of lines printed
 library(broom); # allows to give clean dataset
 library(dplyr); #add dplyr library
 
+
 options(max.print=42);
 panderOptions('table.split.table',Inf); panderOptions('table.split.cells',Inf);
 
@@ -52,3 +53,33 @@ table(patients$gender)
 nrow(patients)
 unique(patients$subject_id)
 length(unique(patients$subject_id))
+
+#' # Introduction to dplyr: data aggregation
+Demographics <- group_by(admissions, subject_id) %>%
+  mutate(los = difftime(dischtime, admittime, units = "days")) %>%
+  summarise(admits = n(),
+            ethnicity0 = length(unique(ethnicity)),
+            ethnicity_combo = paste(sort(unique(ethnicity)),
+                                    collapse = "+"),
+            # language0 = length(unique(language)),
+            # language_combo = paste(sort(unique(language)),
+            #                        collapse = "+"),
+            language = tail(language, 1),
+            dod = max(deathtime, na.rm = TRUE),
+            los = median(los),
+            numED = length(na.omit(edregtime)))
+
+
+
+ggplot(data = Demographics, aes(x = admits)) +
+  geom_histogram() # shows distribution of admits
+
+# subset dataframes in dplyr, by condition
+subset(Demographics, ethnicity0 > 1)
+#subset(Demographics, language0 > 1)
+
+table(admissions$language)
+
+
+
+
