@@ -37,8 +37,17 @@ options(max.print=42);
 panderOptions('table.split.table',Inf); panderOptions('table.split.cells',Inf);
 
 # load data ----
-if(file.exists(ZippedData)){print("exist")}
-if(!file.exists(data.R.rdata)){system()}
+if(!file.exists("data.R.rdata")){system("R -f data.R")}
+# send the command to the operator system
+load("data.R.rdata")
 
 
+#' # Introduction to ggplot
+ggplot(data = patients, aes(x = anchor_age, fill = gender)) +
+  geom_histogram() +
+  geom_vline(xintercept = 65)
 
+table(patients$gender)
+nrow(patients)
+unique(patients$subject_id)
+length(unique(patients$subject_id))
