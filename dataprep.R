@@ -41,6 +41,7 @@ if(!file.exists("data.R.rdata")){system("R -f data.R")}
 # send the command to the operator system
 load("data.R.rdata")
 
+# Section 2 ----
 
 #' # Introduction to ggplot
 ggplot(data = patients, aes(x = anchor_age, fill = gender)) +
