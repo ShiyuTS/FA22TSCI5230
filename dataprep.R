@@ -147,3 +147,36 @@ Cr_labevents <- subset(item_ids_lab, fluid == "Blood") %>%
 grepl(paste(kw_abx, collapse='|'),emar$medication)
 subset(emar,grepl(paste(kw_abx, collapse='|'),medication,ignore.case = T))$event_txt%>%
   table()%>%sort() #Filter emar by antibiotic administration with individual event txt
+
+
+
+#' # group Antibiotics into a smaller number of categories
+#' ## aggregate df by a specific column
+
+Antibiotics_Groupings <- ## group hmad_id by their antibiotics uses
+  Antibiotics %>% group_by(hadm_id) %>%
+  summarise(Vanc = "Vancomycin" %in% label,
+            Zosyn = any(grepl("Piperacillin", label)),
+            Other = length(grep("Piperacillin|Vancomycin", label, value = TRUE, invert = TRUE)) > 0,
+            Exposure1 = case_when(!Vanc ~ "Other",
+                                  Vanc&Zosyn ~ "Vanc&Zosyn",
+                                  Other ~ "Vanc&Other",
+                                  !Other ~ "Vanc",
+                                  TRUE ~ "UNDEFINED"),
+            debug = {browser(); TRUE}, # look into each group_by() row
+            N = n())
+
+# 9-21-2022 STOPPED HERE: sapply(st, function(xx)){between()}
+
+# Assignment: create an exposure2 variable: Vanc & !Zosyn & !Other ~ 'Vanc'
+
+#' ## Find out existing Antibiotics combinations
+Antibiotics_Groupings %>% group_by(Vanc, Zosyn, Other) %>%
+  summarise(N = n())
+
+#' ##
+
+
+
+
+
