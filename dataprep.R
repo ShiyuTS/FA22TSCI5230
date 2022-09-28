@@ -32,6 +32,8 @@ library(pander); # format tables
 library(printr); # set limit on number of lines printed
 library(broom); # allows to give clean dataset
 library(dplyr); #add dplyr library
+library(tidyr);
+library(purrr);
 
 
 options(max.print=42);
@@ -174,8 +176,33 @@ Antibiotics_Groupings <- ## group hmad_id by their antibiotics uses
 Antibiotics_Groupings %>% group_by(Vanc, Zosyn, Other) %>%
   summarise(N = n())
 
-#' ##
+#' ## 9-28-2022
 
+Admissions_scaffold <- admissions %>% select(hadm_id, admittime, dischtime) %>%
+  transmute(hadm_id = hadm_id,
+            ip_date = map2(as.Date(admittime), as.Date(dischtime), seq, by = "1 day")) %>%
+  unnest(ip_date)
+
+Antibiotics_dates <- Antibiotics %>% transmute(hadm_id = hadm_id,
+                          group = case_when(
+                            "Vancomycin" %in% label ~ "Vanc",
+                            grepl("Piperacillin", label) ~ "Zosyn",
+                            TRUE ~ "Other"),
+                          starttime = starttime,
+                          endtime = endtime) %>% unique() %>%
+  subset(!is.na(starttime) & !is.na(endtime)) %>%
+  transmute(hadm_id = hadm_id,
+            ip_date = map2(as.Date(starttime), as.Date(endtime), seq, by = "1 day"),
+            group = group) %>%
+  unnest(ip_date) #%>% View()
+
+
+
+
+subset(Antibiotics, is.na(starttime) | is.na(endtime))
+
+
+    # ! grepl() invert the TRUE/FALSE
 
 
 
