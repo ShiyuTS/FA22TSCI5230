@@ -165,7 +165,7 @@ Antibiotics_Groupings <- ## group hmad_id by their antibiotics uses
                                   Other ~ "Vanc&Other",
                                   !Other ~ "Vanc",
                                   TRUE ~ "UNDEFINED"),
-            debug = {browser(); TRUE}, # look into each group_by() row
+            #debug = {browser(); TRUE}, # look into each group_by() row
             N = n())
 
 # 9-21-2022 STOPPED HERE: sapply(st, function(xx)){between()}
@@ -178,31 +178,49 @@ Antibiotics_Groupings %>% group_by(Vanc, Zosyn, Other) %>%
 
 #' ## 9-28-2022
 
+# create Admissions_scaffold: days within the hospital admission
 Admissions_scaffold <- admissions %>% select(hadm_id, admittime, dischtime) %>%
   transmute(hadm_id = hadm_id,
             ip_date = map2(as.Date(admittime), as.Date(dischtime), seq, by = "1 day")) %>%
   unnest(ip_date)
 
-Antibiotics_dates <- Antibiotics %>% transmute(hadm_id = hadm_id,
-                          group = case_when(
-                            "Vancomycin" %in% label ~ "Vanc",
-                            grepl("Piperacillin", label) ~ "Zosyn",
-                            TRUE ~ "Other"),
-                          starttime = starttime,
-                          endtime = endtime) %>% unique() %>%
+# create Antibiotics_dates: each row represents a day  with antibiotics injection
+Antibiotics_dates <- Antibiotics %>%
+  transmute(hadm_id = hadm_id,
+            group = case_when(
+              "Vancomycin" == label ~ "Vanc",
+              grepl("Piperacillin", label) ~ "Zosyn",
+              TRUE ~ "Other"),
+            starttime = starttime,
+            endtime = endtime) %>% unique() %>%
   subset(!is.na(starttime) & !is.na(endtime)) %>%
   transmute(hadm_id = hadm_id,
             ip_date = map2(as.Date(starttime), as.Date(endtime), seq, by = "1 day"),
             group = group) %>%
-  unnest(ip_date) #%>% View()
+  unnest(ip_date) %>% unique()
 
+# split Antibiotics_dates by antibiotics type
+Antibiotics_dates <- split(Antibiotics_dates, Antibiotics_dates$group)
 
+# update Antiniotics_dates: combined with Antibiotics_scaffold to indicate on what inpatient date, what antibiotics was adminstered
+Antibiotics_dates <- sapply(names(Antibiotics_dates), function(xx)
+  {
+  names(Antibiotics_dates[[xx]])[3] <- xx
+  Antibiotics_dates[[xx]]},
+  simplify = FALSE) %>%
+  Reduce(left_join, ., Admissions_scaffold)
 
+# Two ways to replace N/As with empty string
+# mutate(Antibiotics_dates, Other = paste(ifelse(is.na(Other), "", Other)),
+#        Vanc = coalesce(Vanc, "")) %>% View()
 
-subset(Antibiotics, is.na(starttime) | is.na(endtime))
+mutate(Antibiotics_dates,
+       across(all_of(c("Other", "Vanc", "Zosyn")), ~ coalesce(.x, "")),
+       exposure = paste(Vanc, Zosyn, Other)) %>%
+  select(hadm_id, exposure) %>%
+  unique() %>%
+  pull(exposure) %>% table()
 
-
-    # ! grepl() invert the TRUE/FALSE
 
 
 
