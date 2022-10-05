@@ -34,6 +34,8 @@ library(broom); # allows to give clean dataset
 library(dplyr); #add dplyr library
 library(tidyr);
 library(purrr);
+library(table1);
+
 
 
 options(max.print=42);
@@ -221,7 +223,48 @@ mutate(Antibiotics_dates,
   unique() %>%
   pull(exposure) %>% table()
 
+#' #20221005
+# identify the first date pt administered Vanc & Zosyn
+# merge with Cr_labevents
+# Compare charttime vs. first date with Vanc&Zosyn
+Cr_labevents_2 <- Antibiotics_dates %>%
+  group_by(hadm_id) %>%
+  summarise(date_Vanc_Zosyn = min(ip_date[!is.na(Vanc) & !is.na(Zosyn)])) %>%
+  subset(!is.infinite(date_Vanc_Zosyn)) %>%
+  left_join(Cr_labevents, .) %>%
+  subset(!is.na(hadm_id)) %>%
+  arrange(hadm_id, charttime) %>%
+  group_by(hadm_id) %>%
+  mutate(Vanc_Zosyn = !all(is.na(date_Vanc_Zosyn)))
 
+# combining demographics and creatinine tables
+Analysis_data <- left_join(Cr_labevents_2, Demographics1)
+
+ggplot(Analysis_data, aes(x = Vanc_Zosyn, y = valuenum)) +
+  geom_violin()
+
+pairred_analysis <- c("valuenum", "admits", "flag", "Vanc_Zosyn")
+
+Analysis_data[, pairred_analysis] %>%
+  ggpairs(aes(col = Vanc_Zosyn))
+
+table1(data = Analysis_data, ~ valuenum + flag + anchor_age + gender | Vanc_Zosyn, render.continuous.default() = )
+
+xx <- stats.default(Analysis_data$anchor_age)
+with(xx, MAX - MIN) # with(a, b): temporarily perform calculation b on object a
+# sprintf(a, b, c):
+sprintf("The decimal is %0.2f or %0.1f. The integer is %d. The string is %s. The percentage is %0.1f%%",
+        4.222, 5.2222, 7, "string", 0.25444 * 100)
+
+my.render.cont <- function(x) {
+  with(stats.default(Analysis_data$anchor_age),
+       sprintf("Range(%0.2f ~ %0.1f)", MIN, MAX))
+}
+
+table1(data = Analysis_data, ~ valuenum + flag + anchor_age + gender | Vanc_Zosyn, render.continuous = my.render.cont)
+
+
+# with(a, b): temporarily perform calculation b on object a
 
 
 
