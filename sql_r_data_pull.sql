@@ -1,4 +1,4 @@
--- !preview conn=DBI::dbConnect(RPostgres::Postgres(),dbname = 'postgres',host = 'db.zgqkukklhncxcctlqpvg.supabase.co', port = 5432, user = 'student', password = 'xxx')
+-- !preview conn=DBI::dbConnect(RPostgres::Postgres(),dbname = 'postgres',host = 'xx', port = 5432, user = 'xx', password = 'xxx')
 /*
 SELECT *
 FROM patients
