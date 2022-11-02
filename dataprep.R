@@ -248,7 +248,7 @@ pairred_analysis <- c("valuenum", "admits", "flag", "Vanc_Zosyn")
 Analysis_data[, pairred_analysis] %>%
   ggpairs(aes(col = Vanc_Zosyn))
 
-table1(data = Analysis_data, ~ valuenum + flag + anchor_age + gender | Vanc_Zosyn, render.continuous.default() = )
+table1(data = Analysis_data, ~ valuenum + flag + anchor_age + gender | Vanc_Zosyn, render.continuous.default() = T)
 
 xx <- stats.default(Analysis_data$anchor_age)
 with(xx, MAX - MIN) # with(a, b): temporarily perform calculation b on object a
